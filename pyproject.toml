@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "noten"
+version = "0.1.0"
+description = "LLM-parseable chord progression format with Python implementation"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Noten Contributors"}
+]
+keywords = ["music", "chord", "progression", "llm", "parser", "notation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+demo = [
+    "litellm>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "anthropic>=0.25.0",
+    "openai>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/noten"
+Documentation = "https://github.com/yourusername/noten/blob/main/README.md"
+Repository = "https://github.com/yourusername/noten"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/noten"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
