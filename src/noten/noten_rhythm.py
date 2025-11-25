@@ -2,7 +2,7 @@
 Noten Rhythm Calculator - Calculates duration for each chord based on time signature.
 """
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from fractions import Fraction
 
 
@@ -59,6 +59,7 @@ class RhythmCalculator:
             time_signature: The time signature to use (defaults to 4/4)
         """
         self.time_signature = time_signature or TimeSignature("4/4")
+        self.last_chord_event = None  # Track the last chord across measures
 
     def calculate_song_durations(self, song_ast: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
@@ -74,6 +75,7 @@ class RhythmCalculator:
         """
         events = []
         current_time = Fraction(0)
+        self.last_chord_event = None
 
         # Extract time signature from annotations if present
         for node in song_ast.get('body', []):
@@ -87,48 +89,53 @@ class RhythmCalculator:
         # Process measure lines
         for node in song_ast.get('body', []):
             if node.get('type') == 'MeasureLine':
-                measure_events = self._process_measure_line(node, current_time)
+                measure_events, new_time = self._process_measure_line_with_time(node, current_time)
                 events.extend(measure_events)
-                # Update current time based on measures processed
-                if measure_events:
-                    last_event = measure_events[-1]
-                    current_time = last_event['start'] + last_event['duration']
+                current_time = new_time
+            # Annotations don't advance time
 
         return events
 
-    def _process_measure_line(self, measure_line: Dict[str, Any], start_time: Fraction) -> List[Dict[str, Any]]:
-        """Process a measure line and return chord events."""
+    def _process_measure_line_with_time(self, measure_line: Dict[str, Any], start_time: Fraction) -> Tuple[List[Dict[str, Any]], Fraction]:
+        """Process a measure line and return chord events and new time."""
         events = []
         current_time = start_time
 
         for measure in measure_line.get('measures', []):
-            measure_events = self._process_measure(measure, current_time)
+            measure_events, new_time = self._process_measure_with_time(measure, current_time)
             events.extend(measure_events)
-            if measure_events:
-                last_event = measure_events[-1]
-                current_time = last_event['start'] + last_event['duration']
-            else:
-                # Empty measure - advance by one measure duration
-                current_time += self.time_signature.beats_per_measure
+            current_time = new_time
 
+        return events, current_time
+
+    def _process_measure_line(self, measure_line: Dict[str, Any], start_time: Fraction) -> List[Dict[str, Any]]:
+        """
+        Legacy method for compatibility, but delegates to _process_measure_line_with_time.
+        Note: This loses the time tracking for empty event lists, so it's not ideal for internal use.
+        """
+        events, _ = self._process_measure_line_with_time(measure_line, start_time)
         return events
 
-    def _process_measure(self, measure: Dict[str, Any], start_time: Fraction) -> List[Dict[str, Any]]:
-        """Process a single measure and return chord events."""
+    def _process_measure_with_time(self, measure: Dict[str, Any], start_time: Fraction) -> Tuple[List[Dict[str, Any]], Fraction]:
+        """Process a single measure and return chord events and new time."""
         measure_type = measure.get('type')
 
         if measure_type == 'Measure':
             return self._process_standard_measure(measure, start_time)
         elif measure_type == 'RepeatMeasure':
             # Repeat measure: would need context of previous measure
-            # For now, just return empty (full implementation would track previous measures)
-            return []
+            # For now, just advance time
+            return [], start_time + self.time_signature.beats_per_measure
         elif measure_type == 'RepeatSection':
             return self._process_repeat_section(measure, start_time)
         else:
-            return []
+            return [], start_time
 
-    def _process_standard_measure(self, measure: Dict[str, Any], start_time: Fraction) -> List[Dict[str, Any]]:
+    def _process_measure(self, measure: Dict[str, Any], start_time: Fraction) -> List[Dict[str, Any]]:
+         events, _ = self._process_measure_with_time(measure, start_time)
+         return events
+
+    def _process_standard_measure(self, measure: Dict[str, Any], start_time: Fraction) -> Tuple[List[Dict[str, Any]], Fraction]:
         """
         Process a standard measure with beat markers.
 
@@ -137,7 +144,7 @@ class RhythmCalculator:
         beats = measure.get('beats', [])
         if not beats:
             # Empty measure
-            return []
+            return [], start_time + self.time_signature.beats_per_measure
 
         # Count top-level elements (chords, tuplets, and continuations each count as 1)
         num_elements = len(beats)
@@ -148,7 +155,8 @@ class RhythmCalculator:
 
         events = []
         current_time = start_time
-        last_chord_event = None
+
+        # Use self.last_chord_event to maintain state across measures
 
         for beat in beats:
             beat_type = beat.get('type')
@@ -162,13 +170,13 @@ class RhythmCalculator:
                     'chord': beat
                 }
                 events.append(event)
-                last_chord_event = event
+                self.last_chord_event = event
                 current_time += element_duration
 
             elif beat_type == 'Continuation':
                 # Add this element's duration to the last chord
-                if last_chord_event:
-                    last_chord_event['duration'] += element_duration
+                if self.last_chord_event:
+                    self.last_chord_event['duration'] += element_duration
                 current_time += element_duration
 
             elif beat_type == 'Tuplet':
@@ -176,10 +184,10 @@ class RhythmCalculator:
                 tuplet_events = self._process_tuplet(beat, current_time, element_duration)
                 events.extend(tuplet_events)
                 if tuplet_events:
-                    last_chord_event = tuplet_events[-1]
+                    self.last_chord_event = tuplet_events[-1]
                 current_time += element_duration
 
-        return events
+        return events, current_time
 
     def _process_tuplet(self, tuplet: Dict[str, Any], start_time: Fraction, total_duration: Fraction) -> List[Dict[str, Any]]:
         """
@@ -210,7 +218,7 @@ class RhythmCalculator:
 
         return events
 
-    def _process_repeat_section(self, repeat_section: Dict[str, Any], start_time: Fraction) -> List[Dict[str, Any]]:
+    def _process_repeat_section(self, repeat_section: Dict[str, Any], start_time: Fraction) -> Tuple[List[Dict[str, Any]], Fraction]:
         """Process a repeat section, expanding it according to repeat count."""
         measures = repeat_section.get('measures', [])
         repeat_count = repeat_section.get('repeatCount', 1)
@@ -221,15 +229,11 @@ class RhythmCalculator:
         # Process the section repeat_count times
         for _ in range(repeat_count):
             for measure in measures:
-                measure_events = self._process_measure(measure, current_time)
+                measure_events, new_time = self._process_measure_with_time(measure, current_time)
                 all_events.extend(measure_events)
-                if measure_events:
-                    last_event = measure_events[-1]
-                    current_time = last_event['start'] + last_event['duration']
-                else:
-                    current_time += self.time_signature.beats_per_measure
+                current_time = new_time
 
-        return all_events
+        return all_events, current_time
 
 
 def calculate_durations(song_ast: Dict[str, Any], time_signature: str = "4/4") -> List[Dict[str, Any]]:
