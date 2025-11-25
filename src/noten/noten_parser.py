@@ -246,20 +246,40 @@ class NotenParser:
             elif self._check(TokenType.SINGLE_REPEAT):
                 measure_line.measures.append(self._parse_repeat_measure())
             elif self._check(TokenType.BAR_START):
-                measure_line.measures.append(self._parse_measure())
-                # After parsing a measure, we're positioned at the closing |
-                # If the next token (after |) is a newline/EOF, consume the |
-                # Otherwise, leave it for the next measure
-                if self._check(TokenType.BAR_START):
-                    # Peek ahead to see what's after this |
-                    if self.position + 1 < len(self.tokens):
-                        next_token = self.tokens[self.position + 1]
-                        if next_token.type in (TokenType.NEWLINE, TokenType.MULTI_REPEAT):
-                            # This | is a closing bar, consume it
+                # Check if this BAR_START is followed by SINGLE_REPEAT (e.g., | % |)
+                if self.position + 1 < len(self.tokens) and self.tokens[self.position + 1].type == TokenType.SINGLE_REPEAT:
+                    self._advance()  # consume opening |
+                    measure_line.measures.append(self._parse_repeat_measure())
+
+                    # Check for closing |
+                    if self._check(TokenType.BAR_START):
+                        # Logic to decide whether to consume closing |
+                        # Similar to _parse_measure logic but applied here
+                        if self.position + 1 < len(self.tokens):
+                            next_token = self.tokens[self.position + 1]
+                            if next_token.type in (TokenType.NEWLINE, TokenType.MULTI_REPEAT):
+                                self._advance()
+                        elif self.position + 1 >= len(self.tokens):
                             self._advance()
-                    elif self.position + 1 >= len(self.tokens):
-                        # EOF after |, consume it
-                        self._advance()
+                    else:
+                        # Allow missing closing | if followed by newline/EOF?
+                        # _parse_measure enforces closing bar if not at EOF/newline.
+                        pass
+                else:
+                    measure_line.measures.append(self._parse_measure())
+                    # After parsing a measure, we're positioned at the closing |
+                    # If the next token (after |) is a newline/EOF, consume the |
+                    # Otherwise, leave it for the next measure
+                    if self._check(TokenType.BAR_START):
+                        # Peek ahead to see what's after this |
+                        if self.position + 1 < len(self.tokens):
+                            next_token = self.tokens[self.position + 1]
+                            if next_token.type in (TokenType.NEWLINE, TokenType.MULTI_REPEAT):
+                                # This | is a closing bar, consume it
+                                self._advance()
+                        elif self.position + 1 >= len(self.tokens):
+                            # EOF after |, consume it
+                            self._advance()
             else:
                 break
 
