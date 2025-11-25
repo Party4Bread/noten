@@ -12,13 +12,27 @@ from .noten_lexer import Token, TokenType, tokenize
 
 @dataclass
 class ChordNode:
-    """Represents a single chord."""
+    """
+    Represents a single chord.
+
+    Attributes:
+        type: Node type identifier (always "Chord").
+        root: The root note of the chord (e.g., "C", "F#").
+        quality: The chord quality and extensions (e.g., "maj7", "m").
+        bass: Optional bass note for slash chords (e.g., "B" in "G/B").
+    """
     type: str = "Chord"
     root: str = ""
     quality: str = ""
     bass: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the chord node to a dictionary representation.
+
+        Returns:
+            A dictionary containing the chord's type, root, quality, and bass.
+        """
         return {
             "type": self.type,
             "root": self.root,
@@ -29,20 +43,47 @@ class ChordNode:
 
 @dataclass
 class ContinuationNode:
-    """Represents a continuation marker (.)."""
+    """
+    Represents a continuation marker (.).
+
+    This node indicates that the previous chord's duration should be extended.
+
+    Attributes:
+        type: Node type identifier (always "Continuation").
+    """
     type: str = "Continuation"
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the continuation node to a dictionary representation.
+
+        Returns:
+            A dictionary containing the node type.
+        """
         return {"type": self.type}
 
 
 @dataclass
 class TupletNode:
-    """Represents a tuplet group of chords."""
+    """
+    Represents a tuplet group of chords.
+
+    A tuplet groups multiple chords that share a single beat's duration.
+
+    Attributes:
+        type: Node type identifier (always "Tuplet").
+        chords: List of ChordNodes within this tuplet.
+    """
     type: str = "Tuplet"
     chords: List[ChordNode] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the tuplet node to a dictionary representation.
+
+        Returns:
+            A dictionary containing the node type and list of chord dictionaries.
+        """
         return {
             "type": self.type,
             "chords": [c.to_dict() for c in self.chords]
@@ -51,11 +92,23 @@ class TupletNode:
 
 @dataclass
 class MeasureNode:
-    """Represents a standard measure with beat markers."""
+    """
+    Represents a standard measure with beat markers.
+
+    Attributes:
+        type: Node type identifier (always "Measure").
+        beats: List of beat elements (ChordNode, TupletNode, or ContinuationNode).
+    """
     type: str = "Measure"
     beats: List[Any] = field(default_factory=list)  # ChordNode, TupletNode, or ContinuationNode
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the measure node to a dictionary representation.
+
+        Returns:
+            A dictionary containing the node type and list of beat dictionaries.
+        """
         return {
             "type": self.type,
             "beats": [b.to_dict() for b in self.beats]
@@ -64,11 +117,25 @@ class MeasureNode:
 
 @dataclass
 class RepeatMeasureNode:
-    """Represents a measure repeat (% or %xN)."""
+    """
+    Represents a measure repeat (% or %xN).
+
+    Indicates that the previous measure content should be repeated.
+
+    Attributes:
+        type: Node type identifier (always "RepeatMeasure").
+        count: Number of times to repeat (default is 1).
+    """
     type: str = "RepeatMeasure"
     count: int = 1
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the repeat measure node to a dictionary representation.
+
+        Returns:
+            A dictionary containing the node type and repeat count.
+        """
         return {
             "type": self.type,
             "count": self.count
@@ -77,12 +144,27 @@ class RepeatMeasureNode:
 
 @dataclass
 class RepeatSectionNode:
-    """Represents a repeat section (|: ... :|)."""
+    """
+    Represents a repeat section (|: ... :|).
+
+    Contains a sequence of measures that are repeated a specified number of times.
+
+    Attributes:
+        type: Node type identifier (always "RepeatSection").
+        measures: List of measures within the repeat section.
+        repeat_count: Total number of times this section is played (default is 1).
+    """
     type: str = "RepeatSection"
     measures: List[Any] = field(default_factory=list)  # MeasureNode or RepeatMeasureNode
     repeat_count: int = 1
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the repeat section node to a dictionary representation.
+
+        Returns:
+            A dictionary containing the node type, repeat count, and list of measure dictionaries.
+        """
         return {
             "type": self.type,
             "repeatCount": self.repeat_count,
@@ -92,11 +174,25 @@ class RepeatSectionNode:
 
 @dataclass
 class MeasureLineNode:
-    """Represents a line of measures."""
+    """
+    Represents a line of measures.
+
+    This corresponds to a single line of input text containing one or more measures.
+
+    Attributes:
+        type: Node type identifier (always "MeasureLine").
+        measures: List of measures (MeasureNode, RepeatMeasureNode, or RepeatSectionNode).
+    """
     type: str = "MeasureLine"
     measures: List[Any] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the measure line node to a dictionary representation.
+
+        Returns:
+            A dictionary containing the node type and list of measure dictionaries.
+        """
         return {
             "type": self.type,
             "measures": [m.to_dict() for m in self.measures]
@@ -105,11 +201,25 @@ class MeasureLineNode:
 
 @dataclass
 class AnnotationNode:
-    """Represents an annotation block."""
+    """
+    Represents an annotation block.
+
+    Annotations are metadata or directives enclosed in curly braces, e.g., {title: ...}.
+
+    Attributes:
+        type: Node type identifier (always "Annotation").
+        content: The text content inside the annotation braces.
+    """
     type: str = "Annotation"
     content: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the annotation node to a dictionary representation.
+
+        Returns:
+            A dictionary containing the node type and annotation content.
+        """
         return {
             "type": self.type,
             "content": self.content
@@ -118,11 +228,23 @@ class AnnotationNode:
 
 @dataclass
 class SongNode:
-    """Root AST node representing the entire song."""
+    """
+    Root AST node representing the entire song.
+
+    Attributes:
+        type: Node type identifier (always "Song").
+        body: List of top-level nodes (AnnotationNode or MeasureLineNode).
+    """
     type: str = "Song"
     body: List[Any] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the song node to a dictionary representation.
+
+        Returns:
+            A dictionary containing the node type and list of body element dictionaries.
+        """
         return {
             "type": self.type,
             "body": [node.to_dict() for node in self.body]
@@ -132,7 +254,9 @@ class SongNode:
 class ChordParser:
     """
     Parses chord symbols into root, quality, and bass components.
-    Fixes the spec issue where "Am" was shown as root="Am", quality="".
+
+    This utility class handles the complexities of chord syntax, including
+    slashes for bass notes and special cases like "N.C.".
     """
 
     @staticmethod
@@ -149,10 +273,13 @@ class ChordParser:
             "N.C." -> root="N.C.", quality="", bass=None
 
         Args:
-            chord_str: The chord symbol string
+            chord_str: The chord symbol string to parse.
 
         Returns:
-            ChordNode with parsed components
+            ChordNode: A ChordNode object containing the parsed root, quality, and bass.
+
+        Raises:
+            ValueError: If the chord string is invalid or cannot be parsed.
         """
         # Special case: No Chord
         if chord_str == "N.C.":
@@ -182,6 +309,10 @@ class NotenParser:
 
     Consumes tokens and builds an Abstract Syntax Tree according to
     the grammar in Section 3.1 of the specification.
+
+    Attributes:
+        tokens: The list of tokens to parse.
+        position: The current index in the token list.
     """
 
     def __init__(self, tokens: List[Token]):
@@ -189,7 +320,7 @@ class NotenParser:
         Initialize the parser with a token stream.
 
         Args:
-            tokens: List of tokens from the lexer
+            tokens: List of tokens from the lexer.
         """
         self.tokens = tokens
         self.position = 0
@@ -198,8 +329,14 @@ class NotenParser:
         """
         Parse the token stream into an AST.
 
+        Iterates through the tokens and constructs the song structure,
+        including annotations and measure lines.
+
         Returns:
-            SongNode representing the entire song
+            SongNode: The root node representing the entire song.
+
+        Raises:
+            ValueError: If an unexpected token is encountered.
         """
         song = SongNode()
 
@@ -496,11 +633,17 @@ def parse(input_text: str) -> SongNode:
     """
     Convenience function to parse noten input directly from text.
 
+    This is the main entry point for parsing Noten format strings. It handles
+    tokenization and parsing in a single step.
+
     Args:
-        input_text: The noten format string
+        input_text: The noten format string to be parsed.
 
     Returns:
-        SongNode AST
+        SongNode: The root node of the resulting Abstract Syntax Tree (AST).
+
+    Raises:
+        ValueError: If parsing fails due to invalid syntax or unexpected tokens.
     """
     tokens = tokenize(input_text, include_whitespace=False)
     parser = NotenParser(tokens)

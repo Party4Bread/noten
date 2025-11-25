@@ -92,6 +92,9 @@ def analyze_progression(noten_input: str, title: str = "Progression"):
     Args:
         noten_input: Chord progression in noten format
         title: Title for display
+
+    Returns:
+        Tuple containing the AST dictionary and the list of rhythm events, or (None, None) on failure.
     """
     print(f"\n{'=' * 70}")
     print(f"{title}")
@@ -138,11 +141,11 @@ def analyze_progression(noten_input: str, title: str = "Progression"):
 
 def compare_progressions(original_events, reharmonized_events):
     """
-    Compare original and reharmonized progressions.
+    Compare original and reharmonized progressions side-by-side.
 
     Args:
-        original_events: Rhythm events from original
-        reharmonized_events: Rhythm events from reharmonization
+        original_events: List of rhythm events from the original progression.
+        reharmonized_events: List of rhythm events from the reharmonized progression.
     """
     print(f"\n{'=' * 70}")
     print("COMPARISON")
@@ -176,6 +179,13 @@ def compare_progressions(original_events, reharmonized_events):
 def demo_reharmonization():
     """
     Run the complete reharmonization demo.
+
+    This function executes the full pipeline:
+    1. Parsing an example original progression.
+    2. Generating a reharmonization prompt.
+    3. Simulating an LLM response (or calling one if configured).
+    4. Parsing the reharmonized result.
+    5. Comparing both versions.
     """
     print("""
 ╔══════════════════════════════════════════════════════════════════╗
@@ -269,7 +279,11 @@ def demo_reharmonization():
 
 
 def main():
-    """Main entry point for the demo."""
+    """
+    Main entry point for the demo script.
+
+    Runs the reharmonization demo and prints instructions for real LLM integration.
+    """
     demo_reharmonization()
 
     print("\nTo integrate with a real LLM:")

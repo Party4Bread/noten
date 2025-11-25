@@ -2,39 +2,63 @@
 
 A token-efficient, unambiguous text-based musical chord notation system designed for seamless integration with Large Language Models.
 
-## Overview
+## Purpose
 
-**Noten** (also known as LLM-Chart) is a chord progression format that balances three key requirements:
-- **Unambiguous**: Clear rhythm alignment eliminates guesswork
-- **Token-Efficient**: Concise syntax minimizes LLM context usage
-- **Human-Readable**: Intuitive for musicians to read and write
+**Noten** (also known as LLM-Chart) solves the problem of ambiguous and token-heavy musical notation in AI applications. Standard formats like MusicXML are too verbose for LLMs, while text formats like ChordPro lack rhythmic precision.
 
-## Quick Start
+Noten balances three key requirements:
+- **Unambiguous**: Clear rhythm alignment eliminates guesswork.
+- **Token-Efficient**: Concise syntax minimizes LLM context usage.
+- **Human-Readable**: Intuitive for musicians to read and write.
+
+## Setup
 
 ### Installation
 
-The noten package is now properly packaged and can be installed with `uv` (recommended) or `pip`:
+The noten package is designed to be lightweight and easy to install.
 
-```bash
-# Install with uv (recommended - fast!)
-uv pip install -e .
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/yourusername/noten.git
+    cd noten
+    ```
 
-# Or with traditional pip
-pip install -e .
-```
+2.  **Install with `uv` (recommended) or `pip`:**
+    ```bash
+    # Install with uv (faster)
+    uv pip install -e .
+
+    # Or with traditional pip
+    pip install -e .
+    ```
 
 For detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md).
 
-```bash
-# Run tests
-python test_noten.py
+### Running Tests
 
-# Run demos
-python demo_reharmonization.py
-python demo_real_llm.py  # Requires API keys
+To ensure everything is working correctly:
+
+```bash
+python test_noten.py
 ```
 
+### Running Demos
+
+Explore the capabilities of Noten with the included demos:
+
+```bash
+# Simulated Reharmonization Demo (No API key needed)
+python demo_reharmonization.py
+
+# Real LLM Integration Demo (Requires API keys)
+python demo_real_llm.py
+```
+
+## Usage
+
 ### Basic Example
+
+A typical Noten file looks like this:
 
 ```
 {title: My Song}
@@ -46,6 +70,48 @@ python demo_real_llm.py  # Requires API keys
 
 {Chorus}
 |: C . Am . | F . G . :| x2
+```
+
+### Python API
+
+You can easily integrate Noten into your Python projects.
+
+#### Parsing a Song
+
+```python
+from noten import parse
+
+noten_string = """
+{time: 4/4}
+| C . . G | Am . F . |
+"""
+
+ast = parse(noten_string)
+ast_dict = ast.to_dict()
+# ast_dict now contains the Abstract Syntax Tree of the song
+```
+
+#### Rhythm Analysis
+
+To calculate the exact timing and duration of each chord:
+
+```python
+from noten import parse, calculate_durations, print_rhythm_analysis
+
+noten = """
+{time: 4/4}
+| C . . G | (Am G F) C |
+"""
+
+ast = parse(noten)
+events = calculate_durations(ast.to_dict())
+
+# Print a formatted table
+print_rhythm_analysis(events)
+
+# Access event data programmatically
+for event in events:
+    print(f"Chord: {event['chord']['root']}, Start: {event['start']}, Duration: {event['duration']}")
 ```
 
 ## Format Specification
