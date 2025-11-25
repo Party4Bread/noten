@@ -245,6 +245,28 @@ class NotenParser:
                 measure_line.measures.append(self._parse_repeat_section())
             elif self._check(TokenType.SINGLE_REPEAT):
                 measure_line.measures.append(self._parse_repeat_measure())
+            elif self._check(TokenType.MULTI_REPEAT):
+                # Handle trailing x2 after a measure
+                if not measure_line.measures:
+                    raise ValueError("Unexpected repeat count at start of line")
+                count = self._parse_multi_repeat_count()
+                # Attach to last measure
+                last = measure_line.measures[-1]
+                # If it's a regular measure, we attach the count.
+                # If it's a repeat section, it should have been handled inside _parse_repeat_section,
+                # but if it's external (e.g. |: ... :| x2), it's also handled there.
+                # If it's a repeat measure (%), it's handled in _parse_repeat_measure.
+                # So this is mainly for | C | x2 case where x2 is after the closing bar.
+                if isinstance(last, MeasureNode):
+                    last.repeat_count = count  # type: ignore
+                elif isinstance(last, RepeatMeasureNode):
+                     # Should have been handled in _parse_repeat_measure but if written as | % | x2
+                     last.count = count * last.count
+                else:
+                     # RepeatSectionNode handled internally, but if we see another x2?
+                     # Treat as multiply?
+                     last.repeat_count = last.repeat_count * count
+
             elif self._check(TokenType.BAR_START):
                 # Check if this BAR_START is followed by SINGLE_REPEAT (e.g., | % |)
                 if self.position + 1 < len(self.tokens) and self.tokens[self.position + 1].type == TokenType.SINGLE_REPEAT:
@@ -268,7 +290,7 @@ class NotenParser:
                 else:
                     measure_line.measures.append(self._parse_measure())
                     # After parsing a measure, we're positioned at the closing |
-                    # If the next token (after |) is a newline/EOF, consume the |
+                    # If the next token (after |) is a newline/EOF or MULTI_REPEAT, consume the |
                     # Otherwise, leave it for the next measure
                     if self._check(TokenType.BAR_START):
                         # Peek ahead to see what's after this |
@@ -326,16 +348,46 @@ class NotenParser:
 
         section = RepeatSectionNode()
 
-        # Parse first measure content
-        first_measure = MeasureNode(beats=self._parse_measure_content())
-        section.measures.append(first_measure)
+        # Parse first element (could be a measure content, or a repeat measure %)
+        if self._check(TokenType.SINGLE_REPEAT):
+            section.measures.append(self._parse_repeat_measure())
+        else:
+            # Try to parse measure content
+            beats = self._parse_measure_content()
+            # If we got beats, it's a measure.
+            # If beats is empty, check if we hit a bar start (empty measure) or repeat end
+            if beats or self._check(TokenType.BAR_START) or self._check(TokenType.REPEAT_END):
+                 measure = MeasureNode(beats=beats)
+                 section.measures.append(measure)
+            # If we still have SINGLE_REPEAT here, it means _parse_measure_content stopped at it
+            # This handles |: C % :| where C is parsed, loop breaks at %, but we need to verify
+            # if we are at the start of a "measure" context.
+
+            # Wait, _parse_measure_content eats until bar end or %.
+            # If it eats 'C' and sees '%', it returns [C]. Next token is %.
+            # But here we are at the "first measure".
+            # If the input is |: % :|, we enter else block. _parse_measure_content sees %, returns empty list.
+            # Next token is %.
+            # So if beats is empty and next token is %, we should handle it as repeat measure?
+            elif self._check(TokenType.SINGLE_REPEAT):
+                 section.measures.append(self._parse_repeat_measure())
+
 
         # Parse additional measures within the repeat section
-        while self._check(TokenType.BAR_START):
+        while self._check(TokenType.BAR_START) or self._check(TokenType.SINGLE_REPEAT):
+            if self._check(TokenType.SINGLE_REPEAT):
+                 # This handles case where we have implicit measure boundaries or just %
+                 section.measures.append(self._parse_repeat_measure())
+                 continue
+
+            # It's a BAR_START
             self._advance()  # consume BAR_START
 
             if self._check(TokenType.SINGLE_REPEAT):
                 section.measures.append(self._parse_repeat_measure())
+            elif self._check(TokenType.REPEAT_END):
+                 # Empty measure at end? |: C | :|
+                 break
             else:
                 measure = MeasureNode(beats=self._parse_measure_content())
                 section.measures.append(measure)
