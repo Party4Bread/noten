@@ -9,7 +9,27 @@ from enum import Enum, auto
 
 
 class TokenType(Enum):
-    """Token types as defined in Section 2.1 of the specification."""
+    """
+    Token types as defined in Section 2.1 of the specification.
+
+    Attributes:
+        ANNOTATION_START: '{' - Starts an annotation.
+        ANNOTATION_END: '}' - Ends an annotation.
+        ANNOTATION_CONTENT: Content within an annotation block.
+        BAR_START: '|' - Starts a measure (and ends previous one).
+        BAR_END: '|' - Ends a measure (conceptually same as BAR_START).
+        REPEAT_START: '|:' - Starts a repeat section.
+        REPEAT_END: ':|' - Ends a repeat section.
+        CHORD: Musical chord symbol (e.g., "C", "Am7").
+        NO_CHORD: "N.C." - Indicates no chord played.
+        CONTINUATION: '.' - Extends duration of previous chord.
+        TUPLET_START: '(' - Starts a tuplet group.
+        TUPLET_END: ')' - Ends a tuplet group.
+        SINGLE_REPEAT: '%' - Repeats previous measure.
+        MULTI_REPEAT: 'xN' or '%xN' - Repeats section or measure N times.
+        NEWLINE: Line break character.
+        WHITESPACE: Spaces or tabs.
+    """
     ANNOTATION_START = auto()
     ANNOTATION_END = auto()
     ANNOTATION_CONTENT = auto()
@@ -30,13 +50,27 @@ class TokenType(Enum):
 
 @dataclass
 class Token:
-    """Represents a single token from the input."""
+    """
+    Represents a single token from the input.
+
+    Attributes:
+        type: The type of the token (e.g., CHORD, BAR_START).
+        value: The raw string value of the token.
+        line: The line number where the token appears (1-based).
+        column: The column number where the token starts (1-based).
+    """
     type: TokenType
     value: str
     line: int
     column: int
 
     def __repr__(self):
+        """
+        Return a string representation of the token.
+
+        Returns:
+            String representation useful for debugging.
+        """
         return f"Token({self.type.name}, {self.value!r}, line={self.line}, col={self.column})"
 
 
@@ -46,6 +80,12 @@ class NotenLexer:
 
     Converts input string into a stream of tokens according to the
     specification in Section 2.1.
+
+    Attributes:
+        input_text: The original input string.
+        tokens: The list of generated tokens.
+        current_line: Current line number during scanning.
+        current_column: Current column number during scanning.
     """
 
     # Token patterns in priority order (more specific patterns first)
@@ -91,7 +131,7 @@ class NotenLexer:
         Initialize the lexer with input text.
 
         Args:
-            input_text: The noten format string to tokenize
+            input_text: The noten format string to tokenize.
         """
         self.input_text = input_text
         self.tokens: List[Token] = []
@@ -102,8 +142,14 @@ class NotenLexer:
         """
         Tokenize the entire input string.
 
+        Iterates through the input text, matching patterns to generate tokens.
+        Handles annotations by splitting them into component tokens.
+
         Returns:
-            List of tokens
+            List[Token]: The list of generated tokens.
+
+        Raises:
+            ValueError: If an unexpected character is encountered.
         """
         position = 0
 
@@ -200,10 +246,11 @@ class NotenLexer:
         Get the list of tokens, optionally filtering out whitespace.
 
         Args:
-            include_whitespace: If False, WHITESPACE tokens are excluded
+            include_whitespace: If False, WHITESPACE tokens are excluded from the result.
+                                Defaults to False.
 
         Returns:
-            List of tokens
+            List[Token]: The filtered list of tokens.
         """
         if include_whitespace:
             return self.tokens
@@ -215,12 +262,18 @@ def tokenize(input_text: str, include_whitespace: bool = False) -> List[Token]:
     """
     Convenience function to tokenize noten input.
 
+    Wraps the NotenLexer to provide a simple function call for tokenizing text.
+
     Args:
-        input_text: The noten format string
-        include_whitespace: Whether to include whitespace tokens
+        input_text: The noten format string to be tokenized.
+        include_whitespace: Whether to include whitespace tokens in the output list.
+                            Defaults to False.
 
     Returns:
-        List of tokens
+        List[Token]: A list of Token objects representing the input string.
+
+    Raises:
+        ValueError: If an unknown character is encountered.
     """
     lexer = NotenLexer(input_text)
     lexer.tokenize()

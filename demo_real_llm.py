@@ -20,12 +20,15 @@ def create_reharmonization_prompt(noten_input: str, style: str = "jazz") -> str:
     """
     Create a prompt for LLM chord reharmonization.
 
+    Constructs a detailed prompt explaining the Noten format rules and the
+    desired reharmonization style.
+
     Args:
-        noten_input: Original chord progression in noten format
-        style: Target style (jazz, bossa nova, gospel, etc.)
+        noten_input: Original chord progression in noten format.
+        style: Target style (e.g., "jazz", "bossa nova", "gospel"). Defaults to "jazz".
 
     Returns:
-        Formatted prompt for the LLM
+        str: A formatted prompt string ready to be sent to the LLM.
     """
     prompt = f"""You are an expert music arranger. I'll provide a chord progression in "noten" format, and you should reharmonize it in {style} style.
 
@@ -66,12 +69,18 @@ def call_llm(prompt: str, model: str = "claude-3-5-sonnet-20241022") -> str:
     """
     Call LLM using litellm.
 
+    Sends the prompt to the specified model via the litellm library and returns
+    the generated content.
+
     Args:
-        prompt: The prompt to send
-        model: Model identifier (e.g., "anthropic/claude-3-5-sonnet-20241022")
+        prompt: The prompt text to send to the LLM.
+        model: Model identifier (e.g., "anthropic/claude-3-5-sonnet-20241022").
 
     Returns:
-        LLM response text
+        str: The response text from the LLM.
+
+    Raises:
+        Exception: If the API call fails.
     """
     print(f"\n🤖 Calling LLM: {model}")
     print(f"   (This may take 10-30 seconds...)")
@@ -95,11 +104,17 @@ def extract_noten_from_response(response: str) -> str:
     """
     Extract noten format from LLM response (in case there's extra text).
 
+    Attempts to locate the Noten code block within the LLM's response, handling
+    markdown code blocks and conversational text.
+
     Args:
-        response: LLM response text
+        response: The full text response from the LLM.
 
     Returns:
-        Extracted noten format string
+        str: The extracted Noten format string.
+
+    Raises:
+        ValueError: If no valid Noten format can be found in the response.
     """
     # Remove markdown code blocks if present
     response = response.strip()
@@ -143,12 +158,18 @@ def analyze_progression(noten_input: str, title: str = "Progression") -> tuple[O
     """
     Parse and analyze a noten progression.
 
+    Parses the input string, extracts metadata, calculates rhythm, and prints
+    a summary of the analysis.
+
     Args:
-        noten_input: Chord progression in noten format
-        title: Title for display
+        noten_input: Chord progression in noten format.
+        title: Title to display above the analysis.
 
     Returns:
-        Tuple of (ast_dict, events) or (None, None) if parsing fails
+        tuple: A tuple containing:
+            - ast_dict (Optional[Dict[str, Any]]): The parsed AST as a dictionary.
+            - events (Optional[list]): List of calculated rhythm events.
+            Returns (None, None) if parsing fails.
     """
     print(f"\n{'═' * 70}")
     print(f"{title}")
@@ -197,11 +218,11 @@ def analyze_progression(noten_input: str, title: str = "Progression") -> tuple[O
 
 def compare_progressions(original_events, reharmonized_events):
     """
-    Compare original and reharmonized progressions.
+    Compare original and reharmonized progressions side-by-side.
 
     Args:
-        original_events: Rhythm events from original
-        reharmonized_events: Rhythm events from reharmonization
+        original_events: List of rhythm events from the original progression.
+        reharmonized_events: List of rhythm events from the reharmonized progression.
     """
     print(f"\n{'═' * 70}")
     print("COMPARISON: Original vs Reharmonized")
@@ -243,7 +264,13 @@ def compare_progressions(original_events, reharmonized_events):
 
 def demo_interactive():
     """
-    Interactive demo allowing user to choose options.
+    Run an interactive demo allowing the user to choose models and input options.
+
+    This function handles:
+    1. Checking for available API keys.
+    2. Prompting the user to select an LLM model.
+    3. Prompting the user to select an example or provide custom input.
+    4. Running the reharmonization process and displaying results.
     """
     print("""
 ╔══════════════════════════════════════════════════════════════════╗

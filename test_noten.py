@@ -8,7 +8,12 @@ from noten import parse, ChordParser, calculate_durations
 
 
 def test_chord_parser():
-    """Test chord parsing into root, quality, bass components."""
+    """
+    Test chord parsing into root, quality, bass components.
+
+    Verifies that various chord strings (maj7, minor, slash chords, etc.)
+    are correctly parsed into their constituent parts.
+    """
 
     test_cases = [
         ("C", {"root": "C", "quality": "", "bass": None}),
@@ -33,7 +38,12 @@ def test_chord_parser():
 
 
 def test_basic_parsing():
-    """Test basic parsing functionality."""
+    """
+    Test basic parsing functionality.
+
+    Verifies that a simple song structure with annotations and a measure line
+    is parsed correctly into the expected AST structure.
+    """
     input_text = """{title: Test Song}
 {key: G}
 {time: 4/4}
@@ -62,7 +72,12 @@ def test_basic_parsing():
 
 
 def test_tuplet_parsing():
-    """Test tuplet parsing."""
+    """
+    Test tuplet parsing.
+
+    Verifies that tuplets (grouped chords within parentheses) are correctly
+    identified and parsed into TupletNodes.
+    """
     input_text = "| C (G F Em) D |"
 
     ast = parse(input_text)
@@ -85,7 +100,12 @@ def test_tuplet_parsing():
 
 
 def test_repeat_section():
-    """Test repeat section parsing."""
+    """
+    Test repeat section parsing.
+
+    Verifies that repeat sections with explicit repeat counts (e.g., |: ... :| x3)
+    are correctly parsed into RepeatSectionNodes.
+    """
     input_text = "|: G | C :| x3"
 
     ast = parse(input_text)
@@ -100,7 +120,12 @@ def test_repeat_section():
 
 
 def test_continuation_rhythm():
-    """Test rhythm calculation with continuation markers."""
+    """
+    Test rhythm calculation with continuation markers.
+
+    Verifies that continuation markers ('.') correctly extend the duration
+    of the preceding chord in the rhythm analysis.
+    """
     # Example from spec: | C . . G | has Cmaj7 for 3 beats, G for 1 beat
     input_text = """{time: 4/4}
 | C . . G |
@@ -117,7 +142,11 @@ def test_continuation_rhythm():
 
 
 def test_tuplet_rhythm():
-    """Test rhythm calculation for tuplets."""
+    """
+    Test rhythm calculation for tuplets.
+
+    Verifies that chords within a tuplet share the beat duration equally.
+    """
     # Example from spec: | C (G F G) | - two top-level elements
     input_text = """{time: 4/4}
 | C (G F G) |
@@ -138,7 +167,12 @@ def test_tuplet_rhythm():
 
 
 def test_slash_chords():
-    """Test slash chord parsing."""
+    """
+    Test slash chord parsing.
+
+    Verifies that slash chords (e.g., G/B) are correctly parsed, separating
+    the root/quality from the bass note.
+    """
     input_text = "| G/B | Am7/G | C |"
 
     ast = parse(input_text)
@@ -158,7 +192,12 @@ def test_slash_chords():
 
 
 def test_different_time_signatures():
-    """Test rhythm calculation with different time signatures."""
+    """
+    Test rhythm calculation with different time signatures.
+
+    Verifies that rhythm calculations adjust correctly for different time
+    signatures like 3/4 and 6/8.
+    """
     # 3/4 time
     input_text = """{time: 3/4}
 | C G Am |
@@ -188,7 +227,12 @@ def test_different_time_signatures():
 
 
 def test_no_chord():
-    """Test N.C. (no chord) parsing."""
+    """
+    Test N.C. (no chord) parsing.
+
+    Verifies that 'N.C.' is correctly recognized as a valid chord token
+    representing silence or no chord.
+    """
     input_text = "| C . N.C. . |"
 
     ast = parse(input_text)

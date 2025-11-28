@@ -7,7 +7,11 @@ from fractions import Fraction
 
 
 class TimeSignature:
-    """Represents a time signature like 4/4, 3/4, 6/8, etc."""
+    """
+    Represents a time signature like 4/4, 3/4, 6/8, etc.
+
+    Handles parsing of time signature strings and calculation of beats per measure.
+    """
 
     def __init__(self, signature_str: str = "4/4"):
         """
@@ -38,6 +42,12 @@ class TimeSignature:
         return Fraction(self.numerator, 1)
 
     def __str__(self):
+        """
+        Return the string representation of the time signature.
+
+        Returns:
+            String like "4/4", "3/4", etc.
+        """
         return f"{self.numerator}/{self.denominator}"
 
 
@@ -49,6 +59,10 @@ class RhythmCalculator:
     1. Time is divided equally among top-level elements in a measure
     2. Continuation markers extend the previous chord's duration
     3. Tuplets are single top-level elements with internal subdivision
+
+    Attributes:
+        time_signature: The current time signature being used.
+        last_chord_event: Tracks the last chord event to handle continuations across boundaries.
     """
 
     def __init__(self, time_signature: TimeSignature = None):
@@ -56,7 +70,7 @@ class RhythmCalculator:
         Initialize the rhythm calculator.
 
         Args:
-            time_signature: The time signature to use (defaults to 4/4)
+            time_signature: The initial time signature to use. Defaults to 4/4 if None.
         """
         self.time_signature = time_signature or TimeSignature("4/4")
         self.last_chord_event = None  # Track the last chord across measures
@@ -65,13 +79,15 @@ class RhythmCalculator:
         """
         Calculate durations for all chords in a song AST.
 
-        Returns a flat list of chord events with timing information.
+        Processes the song structure, updating time signatures from annotations
+        and calculating start times and durations for every chord event.
 
         Args:
-            song_ast: The song AST dictionary
+            song_ast: The song AST dictionary (SongNode.to_dict()).
 
         Returns:
-            List of chord events with start time and duration
+            List[Dict[str, Any]]: A flat list of chord events with timing information.
+                                  Each event includes 'chord', 'start', 'duration'.
         """
         events = []
         current_time = Fraction(0)
@@ -240,12 +256,16 @@ def calculate_durations(song_ast: Dict[str, Any], time_signature: str = "4/4") -
     """
     Convenience function to calculate durations for a song AST.
 
+    Initializes a RhythmCalculator and processes the provided AST.
+
     Args:
-        song_ast: The song AST dictionary
-        time_signature: Time signature string (default "4/4")
+        song_ast: The song AST dictionary (as returned by SongNode.to_dict()).
+        time_signature: Time signature string (default "4/4") to use if not specified
+                        in the song annotations.
 
     Returns:
-        List of chord events with timing information
+        List[Dict[str, Any]]: List of chord events, where each event is a dictionary
+                              containing 'chord', 'start', 'duration', etc.
     """
     calculator = RhythmCalculator(TimeSignature(time_signature))
     return calculator.calculate_song_durations(song_ast)
@@ -253,10 +273,13 @@ def calculate_durations(song_ast: Dict[str, Any], time_signature: str = "4/4") -
 
 def print_rhythm_analysis(events: List[Dict[str, Any]]):
     """
-    Pretty-print rhythm analysis.
+    Pretty-print rhythm analysis to standard output.
+
+    Formats the list of chord events into a readable table showing time,
+    duration, and chord details.
 
     Args:
-        events: List of chord events
+        events: List of chord events (as returned by calculate_durations).
     """
     print(f"{'Time':<10} {'Duration':<12} {'Chord':<15} {'Tuplet'}")
     print("-" * 60)
