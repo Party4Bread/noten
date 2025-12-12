@@ -77,7 +77,7 @@ class NotenLexer:
         (r'\.', TokenType.CONTINUATION),
 
         # Chord pattern: Root (A-G), optional accidental (#/b), quality/extensions
-        (r'[A-G](?:#|b)?(?:[a-zA-Z0-9b#+°ø/])*', TokenType.CHORD),
+        (r'[A-G](?:#|b)?(?:[a-zA-Z0-9b#+°ø/]|\([a-zA-Z0-9b#+°ø/]+\))*', TokenType.CHORD),
 
         # Whitespace
         (r'[ \t]+', TokenType.WHITESPACE),
